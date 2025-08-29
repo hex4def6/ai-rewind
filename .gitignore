@@ -1,0 +1,20 @@
+node_modules/
+coverage/
+*.log
+*.sqlite
+.env
+.env.local
+.DS_Store
+Thumbs.db
+bun.lockb
+
+# AI Change Tracking
+.git-ai-tracking/
+
+# Test directories
+test-ai-tracker/
+/tmp/
+
+# IDE
+.vscode/
+.idea/
