@@ -2,17 +2,13 @@
   "name": "ai-rewind",
   "version": "1.0.0",
   "description": "AI change tracking and rollback system using shadow git repository",
-  "main": "dist/index.js",
+  "private": true,
   "type": "module",
-  "bin": {
-    "ai-rewind": "./dist/cli.js"
-  },
   "scripts": {
     "dev": "bun run --watch src/cli.ts",
     "build": "node scripts/build.cjs",
     "build:bun": "bun build src/cli.ts --outdir dist --target node",
     "build:standalone": "bun build src/cli.ts --compile --outfile ai-rewind.exe",
-    "postinstall": "node scripts/build.cjs",
     "test": "bun test",
     "test:watch": "bun test --watch",
     "lint": "biome check .",
