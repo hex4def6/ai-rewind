@@ -128,7 +128,7 @@ describe('AITracker', () => {
     });
 
     test('should rollback single commit', async () => {
-      await tracker.rollback(1);
+      await tracker.rollback(1, { noConfirm: true });
       
       expect(existsSync(join(testDir, 'file2.txt'))).toBe(false);
       expect(existsSync(join(testDir, 'file1.txt'))).toBe(true);
@@ -138,7 +138,7 @@ describe('AITracker', () => {
       writeFileSync(join(testDir, 'file3.txt'), 'content 3');
       await tracker.commit('Commit 3');
       
-      await tracker.rollback(2);
+      await tracker.rollback(2, { noConfirm: true });
       
       expect(existsSync(join(testDir, 'file3.txt'))).toBe(false);
       expect(existsSync(join(testDir, 'file2.txt'))).toBe(false);
@@ -155,7 +155,7 @@ describe('AITracker', () => {
         logOutput += String(msg);
       };
       
-      await tracker.rollback(1, { dryRun: true });
+      await tracker.rollback(1, { dryRun: true, noConfirm: true });
       
       // Files should still exist (dry run doesn't change anything)
       expect(existsSync(join(testDir, 'file3.txt'))).toBe(true);
@@ -169,7 +169,7 @@ describe('AITracker', () => {
       writeFileSync(join(testDir, 'uncommitted.txt'), 'not committed');
       
       // Should work with force flag
-      await tracker.rollback(1, { force: true });
+      await tracker.rollback(1, { force: true, noConfirm: true });
       
       expect(existsSync(join(testDir, 'file2.txt'))).toBe(false);
       expect(existsSync(join(testDir, 'file1.txt'))).toBe(true);
@@ -321,7 +321,7 @@ describe('AITracker', () => {
         logOutput += String(msg);
       };
       
-      await tracker.rollback(1);
+      await tracker.rollback(1, { noConfirm: true });
       expect(logOutput).toContain('Cannot rollback');
       
       console.log = originalLog;

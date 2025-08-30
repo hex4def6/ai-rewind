@@ -85,14 +85,43 @@ program
   .description('Revert last N commits (default: 1)')
   .option('-f, --force', 'Force rollback even with uncommitted changes')
   .option('-d, --dry-run', 'Show what would be rolled back without making changes')
-  .action(async (count?: string, options?: { force?: boolean; dryRun?: boolean }) => {
+  .option('-y, --yes', 'Skip confirmation prompt')
+  .action(async (count?: string, options?: { force?: boolean; dryRun?: boolean; yes?: boolean }) => {
     try {
       const rollbackCount = count ? parseInt(count) : 1;
       if (isNaN(rollbackCount) || rollbackCount < 1) {
         console.error(chalk.red('Error: Count must be a positive number'));
         process.exit(1);
       }
-      await tracker.rollback(rollbackCount, options || {});
+      await tracker.rollback(rollbackCount, { 
+        force: options?.force,
+        dryRun: options?.dryRun,
+        noConfirm: options?.yes
+      });
+    } catch (error) {
+      console.error(chalk.red(`Error: ${error instanceof Error ? error.message : error}`));
+      process.exit(1);
+    }
+  });
+
+program
+  .command('forward <tag>')
+  .description('Restore from a backup tag or commit')
+  .action(async (tag: string) => {
+    try {
+      await tracker.forward(tag);
+    } catch (error) {
+      console.error(chalk.red(`Error: ${error instanceof Error ? error.message : error}`));
+      process.exit(1);
+    }
+  });
+
+program
+  .command('backups')
+  .description('List available backup points')
+  .action(async () => {
+    try {
+      await tracker.listBackups();
     } catch (error) {
       console.error(chalk.red(`Error: ${error instanceof Error ? error.message : error}`));
       process.exit(1);

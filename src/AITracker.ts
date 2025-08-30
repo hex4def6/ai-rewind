@@ -189,7 +189,7 @@ export class AITracker {
     }
   }
 
-  async rollback(count: number = 1, options: { force?: boolean; dryRun?: boolean } = {}): Promise<void> {
+  async rollback(count: number = 1, options: { force?: boolean; dryRun?: boolean; noConfirm?: boolean } = {}): Promise<void> {
     // Validate input
     if (!Number.isInteger(count) || count < 1) {
       throw new Error('Rollback count must be a positive integer');
@@ -250,10 +250,46 @@ export class AITracker {
         return;
       }
 
+      // Create backup tag before rollback
+      const backupTag = `backup-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+      spinner.text = 'Creating backup...';
+      try {
+        await this.execGit(['tag', backupTag, 'HEAD']);
+        console.log(chalk.gray(`Backup created: ${backupTag}`));
+      } catch (error) {
+        console.warn(chalk.yellow('Warning: Could not create backup tag'));
+      }
+
+      // Confirmation prompt (unless --no-confirm or --force)
+      if (!options.noConfirm && !options.force) {
+        spinner.stop();
+        console.log(chalk.yellow(`\n⚠️  This will rollback ${count} commit(s) and cannot be undone easily.`));
+        console.log(chalk.gray(`(Backup saved as: ${backupTag})`));
+        
+        // Simple confirmation using built-in readline
+        const readline = await import('readline');
+        const rl = readline.createInterface({
+          input: process.stdin,
+          output: process.stdout
+        });
+        
+        const answer = await new Promise<string>((resolve) => {
+          rl.question('Are you sure you want to continue? (y/N): ', resolve);
+        });
+        rl.close();
+        
+        if (answer.toLowerCase() !== 'y' && answer.toLowerCase() !== 'yes') {
+          console.log(chalk.yellow('Rollback cancelled.'));
+          return;
+        }
+        spinner.start();
+      }
+
       spinner.text = `Rolling back ${count} commit(s)...`;
       await this.execGit(['reset', '--hard', `HEAD~${count}`]);
 
       spinner.succeed(chalk.green(`✓ Successfully rolled back ${count} commit(s)!`));
+      console.log(chalk.gray(`To restore: ai-tracker forward ${backupTag}`));
       
       // Show new state
       console.log('\n' + chalk.cyan('Current state:'));
@@ -322,6 +358,81 @@ export class AITracker {
     } catch (error) {
       console.log(chalk.red(`Error: ${error instanceof Error ? error.message : error}`));
     }
+  }
+
+  async forward(tagOrCommit: string): Promise<void> {
+    const spinner = ora('Restoring from backup...').start();
+
+    try {
+      if (!(await this.isInitialized())) {
+        spinner.fail('AI tracking repository not initialized!');
+        throw new Error('Please run "ai-tracker init" first');
+      }
+
+      // Check if tag or commit exists
+      try {
+        await this.execGit(['rev-parse', tagOrCommit]);
+      } catch {
+        spinner.fail(`Backup or commit '${tagOrCommit}' not found`);
+        
+        // Show available backups
+        console.log('\n' + chalk.cyan('Available backups:'));
+        const tags = await this.execGit(['tag', '-l', 'backup-*']);
+        if (tags) {
+          console.log(tags);
+        } else {
+          console.log(chalk.gray('No backups found'));
+        }
+        return;
+      }
+
+      // Reset to the specified tag/commit
+      spinner.text = `Restoring to ${tagOrCommit}...`;
+      await this.execGit(['reset', '--hard', tagOrCommit]);
+
+      spinner.succeed(chalk.green(`✓ Successfully restored to ${tagOrCommit}`));
+      
+      // Show current state
+      console.log('\n' + chalk.cyan('Current state:'));
+      const log = await this.execGit(['log', '--oneline', '-1']);
+      console.log(log);
+    } catch (error) {
+      spinner.fail('Failed to restore from backup');
+      throw error;
+    }
+  }
+
+  async listBackups(): Promise<void> {
+    if (!(await this.isInitialized())) {
+      console.log(chalk.red('Error: AI tracking repository not initialized!'));
+      return;
+    }
+
+    console.log(chalk.cyan.bold('AI Tracker - Available Backups'));
+    console.log('=' .repeat(40));
+
+    const tags = await this.execGit(['tag', '-l', 'backup-*', '--sort=-creatordate']);
+    
+    if (!tags) {
+      console.log(chalk.yellow('No backups found'));
+      console.log(chalk.gray('\nBackups are created automatically when you rollback'));
+      return;
+    }
+
+    console.log('\n' + chalk.yellow('Backup tags:'));
+    const tagLines = tags.split('\n').filter(t => t);
+    
+    for (const tag of tagLines) {
+      try {
+        const commit = await this.execGit(['log', '--oneline', '-1', tag]);
+        console.log(`  ${chalk.green(tag)}`);
+        console.log(`    ${chalk.gray(commit)}`);
+      } catch {
+        console.log(`  ${tag}`);
+      }
+    }
+
+    console.log('\n' + chalk.gray('To restore: ai-tracker forward <backup-tag>'));
   }
 
   async diff(commitHash?: string): Promise<void> {
