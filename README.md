@@ -180,6 +180,29 @@ node ~/ai-rewind/dist/cli.js config --create
 node ~/ai-rewind/dist/cli.js config
 ```
 
+See `.ai-rewind.example.json` for a complete example configuration.
+
+## Uninstalling
+
+To completely remove ai-rewind tracking from a project:
+
+```bash
+# Remove the shadow git repository
+rm -rf .git-ai-tracking
+
+# Remove the config file (if created)
+rm .ai-rewind.json
+
+# Remove the .gitignore entry
+# Edit .gitignore and remove the line: .git-ai-tracking/
+```
+
+To uninstall ai-rewind itself:
+```bash
+# Simply delete the ai-rewind directory
+rm -rf ~/ai-rewind
+```
+
 ## Development
 
 ```bash

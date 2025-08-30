@@ -100,6 +100,9 @@ export class AITracker {
       // Create initial commit
       await this.execGit(['commit', '-m', 'Initial state before AI changes', '--allow-empty']);
 
+      // Run git gc to clean up
+      await this.execGit(['gc', '--auto']);
+
       spinner.succeed(chalk.green('✓ AI tracking repository initialized successfully!'));
       
       console.log('\n' + chalk.cyan('Available commands:'));
@@ -177,11 +180,17 @@ export class AITracker {
       spinner.text = `Creating commit: ${message}`;
       await this.execGit(['commit', '-m', message]);
 
+      // Run git gc periodically to clean up
+      const commitCount = await this.execGit(['rev-list', '--count', 'HEAD']);
+      if (parseInt(commitCount) % 10 === 0) {
+        await this.execGit(['gc', '--auto']);
+      }
+
       spinner.succeed(chalk.green('✓ Changes committed successfully!'));
       
       // Show recent commits
       console.log('\n' + chalk.cyan('Latest commits:'));
-      const log = await this.execGit(['log', '--oneline', '-5']);
+      const log = await this.execGit(['log', '--format=%C(yellow)%h%C(reset) - %C(cyan)%ad%C(reset) - %s', '--date=short', '-5']);
       console.log(log);
     } catch (error) {
       spinner.fail('Failed to commit changes');
@@ -220,7 +229,7 @@ export class AITracker {
 
       // Show current history
       spinner.text = 'Current change history:';
-      const currentLog = await this.execGit(['log', '--oneline', '-5']);
+      const currentLog = await this.execGit(['log', '--format=%h - %ad - %s', '--date=short', '-5']);
       console.log('\n' + chalk.cyan('Current history:'));
       console.log(currentLog);
 
@@ -238,7 +247,7 @@ export class AITracker {
         spinner.info('Dry run mode - no changes will be made');
         console.log(chalk.yellow(`\nWould rollback ${count} commit(s):`));
         const targetCommit = await this.execGit(['rev-parse', `HEAD~${count}`]);
-        const targetLog = await this.execGit(['log', '--oneline', '-1', targetCommit]);
+        const targetLog = await this.execGit(['log', '--format=%h - %ad - %s', '--date=short', '-1', targetCommit]);
         console.log(`Target state after rollback: ${targetLog}`);
         
         // Show what files would be affected
@@ -293,7 +302,7 @@ export class AITracker {
       
       // Show new state
       console.log('\n' + chalk.cyan('Current state:'));
-      const newLog = await this.execGit(['log', '--oneline', '-1']);
+      const newLog = await this.execGit(['log', '--format=%h - %ad - %s', '--date=short', '-1']);
       console.log(newLog);
     } catch (error) {
       spinner.fail('Rollback failed');
@@ -320,7 +329,7 @@ export class AITracker {
       console.log(status);
 
       console.log('\n' + chalk.yellow('Recent Commits:'));
-      const log = await this.execGit(['log', '--oneline', '-10']);
+      const log = await this.execGit(['log', '--format=%h - %ad - %s', '--date=short', '-10']);
       console.log(log);
 
       try {
@@ -347,7 +356,7 @@ export class AITracker {
       }
 
       console.log(`\nShowing last ${count} changes:\n`);
-      const log = await this.execGit(['log', '--oneline', '--graph', '--decorate', `-n`, count.toString()]);
+      const log = await this.execGit(['log', '--format=%C(yellow)%h%C(reset) - %C(cyan)%ai%C(reset) - %s %C(green)%d%C(reset)', '--graph', `-n`, count.toString()]);
       console.log(log);
 
       console.log('\n' + '=' .repeat(40));
@@ -394,7 +403,7 @@ export class AITracker {
       
       // Show current state
       console.log('\n' + chalk.cyan('Current state:'));
-      const log = await this.execGit(['log', '--oneline', '-1']);
+      const log = await this.execGit(['log', '--format=%h - %ad - %s', '--date=short', '-1']);
       console.log(log);
     } catch (error) {
       spinner.fail('Failed to restore from backup');
@@ -424,7 +433,7 @@ export class AITracker {
     
     for (const tag of tagLines) {
       try {
-        const commit = await this.execGit(['log', '--oneline', '-1', tag]);
+        const commit = await this.execGit(['log', '--format=%h - %ad - %s', '--date=short', '-1', tag]);
         console.log(`  ${chalk.green(tag)}`);
         console.log(`    ${chalk.gray(commit)}`);
       } catch {

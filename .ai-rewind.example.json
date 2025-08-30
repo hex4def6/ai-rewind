@@ -1,0 +1,27 @@
+{
+  "excludePatterns": [
+    "node_modules/**",
+    ".git/**",
+    ".git-ai-tracking/**",
+    "**/*.log",
+    "**/dist/**",
+    "**/build/**",
+    "**/.env*",
+    "**/coverage/**",
+    "**/*.tmp",
+    "**/.cache/**",
+    "**/vendor/**",
+    "**/__pycache__/**",
+    "**/*.pyc",
+    "**/target/**",
+    "**/.idea/**",
+    "**/.vscode/**",
+    "**/*.sqlite",
+    "**/*.db"
+  ],
+  "autoCommitThreshold": 5,
+  "commitMessageFormat": "AI change at {timestamp}",
+  "maxCommits": 100,
+  "verboseOutput": false,
+  "defaultBranch": "master"
+}
