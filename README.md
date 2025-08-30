@@ -9,7 +9,6 @@ A shadow git repository system to track AI-made changes separately from your mai
 - 📊 **Statistics** - Track commits, files changed, and lines modified
 - 🖥️ **Cross-Platform** - Works on Windows, macOS, and Linux
 - 🚀 **Built with Bun** - Fast, modern JavaScript runtime
-- 📝 **SQLite Database** - Tracks metrics and statistics with Drizzle ORM
 
 ## Installation
 
@@ -175,14 +174,11 @@ ai-tracker/
 │   ├── AITracker.ts      # Core tracking functionality
 │   ├── Config.ts          # Configuration management
 │   ├── cli.ts            # CLI entry point
-│   └── db/               # Database schemas and operations
-│       ├── schema.ts     # Drizzle ORM schemas
-│       └── index.ts      # Database operations
+│   └── index.ts          # Main export file
 ├── dist/                 # Compiled JavaScript
 ├── package.json
 ├── tsconfig.json
-├── biome.json           # Biome linter configuration
-└── drizzle.config.ts    # Drizzle ORM configuration
+└── biome.json           # Biome linter configuration
 ```
 
 ## Development
