@@ -1,5 +1,5 @@
 import { execa, ExecaError } from 'execa';
-import { existsSync, writeFileSync, readFileSync } from 'fs';
+import { existsSync, writeFileSync, readFileSync, mkdirSync } from 'fs';
 import { join, resolve } from 'path';
 import chalk from 'chalk';
 import ora from 'ora';
@@ -34,7 +34,24 @@ export class AITracker {
       return stdout;
     } catch (error) {
       const execaError = error as ExecaError;
-      throw new Error(`Git command failed: ${execaError.stderr || execaError.message}`);
+      const command = args[0];
+      
+      // Provide better error messages for common issues
+      if (execaError.stderr?.includes('not a git repository')) {
+        throw new Error('AI tracking repository not initialized. Run "ai-tracker init" first.');
+      }
+      if (execaError.stderr?.includes('Permission denied')) {
+        throw new Error('Permission denied. Check file permissions in your project directory.');
+      }
+      if (execaError.stderr?.includes('index.lock')) {
+        throw new Error('Another git process is running. Please wait and try again.');
+      }
+      if (command === 'commit' && execaError.stderr?.includes('nothing to commit')) {
+        throw new Error('No changes to commit. All files are up to date.');
+      }
+      
+      // Default error message
+      throw new Error(`Git operation failed: ${execaError.stderr || execaError.message}`);
     }
   }
 
@@ -125,12 +142,28 @@ export class AITracker {
       }
 
       spinner.text = 'Staging all changes...';
+      
+      // Get exclude patterns from config and create .gitignore entries
+      const excludePatterns = this.configManager.excludePatterns;
+      const excludePath = join(this.config.gitDir, 'info', 'exclude');
+      
+      // Ensure the info directory exists
+      const infoDir = join(this.config.gitDir, 'info');
+      if (!existsSync(infoDir)) {
+        mkdirSync(infoDir, { recursive: true });
+      }
+      
+      // Write exclude patterns to git's exclude file
+      if (excludePatterns.length > 0) {
+        const excludeContent = excludePatterns.join('\n');
+        writeFileSync(excludePath, excludeContent, 'utf-8');
+      }
+      
       await this.execGit(['add', '-A']);
 
       // Generate commit message if not provided
       if (!message) {
-        const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
-        message = `AI change at ${timestamp}`;
+        message = this.configManager.formatCommitMessage();
       }
 
       spinner.text = `Creating commit: ${message}`;
@@ -148,7 +181,12 @@ export class AITracker {
     }
   }
 
-  async rollback(count: number = 1): Promise<void> {
+  async rollback(count: number = 1, options: { force?: boolean; dryRun?: boolean } = {}): Promise<void> {
+    // Validate input
+    if (!Number.isInteger(count) || count < 1) {
+      throw new Error('Rollback count must be a positive integer');
+    }
+
     const spinner = ora('Checking commit history...').start();
 
     try {
@@ -180,10 +218,27 @@ export class AITracker {
 
       // Check for uncommitted changes
       const status = await this.execGit(['status', '--porcelain']);
-      if (status.trim()) {
+      if (status.trim() && !options.force) {
         spinner.warn(chalk.yellow('Warning: You have uncommitted changes that will be lost!'));
         console.log('Warning: You have uncommitted changes that will be lost!');
         console.log('Please commit or stash your changes before rolling back.');
+        console.log('Or use --force to rollback anyway (changes will be lost).');
+        return;
+      }
+
+      if (options.dryRun) {
+        spinner.info('Dry run mode - no changes will be made');
+        console.log(chalk.yellow(`\nWould rollback ${count} commit(s):`));
+        const targetCommit = await this.execGit(['rev-parse', `HEAD~${count}`]);
+        const targetLog = await this.execGit(['log', '--oneline', '-1', targetCommit]);
+        console.log(`Target state after rollback: ${targetLog}`);
+        
+        // Show what files would be affected
+        const diff = await this.execGit(['diff', '--name-status', `HEAD~${count}`, 'HEAD']);
+        if (diff) {
+          console.log('\nFiles that would be changed:');
+          console.log(diff);
+        }
         return;
       }
 

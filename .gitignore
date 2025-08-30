@@ -1,4 +1,5 @@
 node_modules/
+dist/
 coverage/
 *.log
 *.sqlite
@@ -7,6 +8,7 @@ coverage/
 .DS_Store
 Thumbs.db
 bun.lockb
+package-lock.json
 
 # AI Change Tracking
 .git-ai-tracking/

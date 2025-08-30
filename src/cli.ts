@@ -19,6 +19,24 @@ try {
   // Use default version if package.json not found
 }
 
+// Check if git is available
+import { execSync } from 'child_process';
+
+function checkGitAvailable(): boolean {
+  try {
+    execSync('git --version', { stdio: 'ignore' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+if (!checkGitAvailable()) {
+  console.error(chalk.red('Error: Git is not installed or not in PATH'));
+  console.error(chalk.yellow('Please install Git from https://git-scm.com/downloads'));
+  process.exit(1);
+}
+
 const program = new Command();
 const tracker = new AITracker();
 
@@ -54,14 +72,16 @@ program
 program
   .command('rollback [count]')
   .description('Revert last N commits (default: 1)')
-  .action(async (count?: string) => {
+  .option('-f, --force', 'Force rollback even with uncommitted changes')
+  .option('-d, --dry-run', 'Show what would be rolled back without making changes')
+  .action(async (count?: string, options?: { force?: boolean; dryRun?: boolean }) => {
     try {
       const rollbackCount = count ? parseInt(count) : 1;
       if (isNaN(rollbackCount) || rollbackCount < 1) {
         console.error(chalk.red('Error: Count must be a positive number'));
         process.exit(1);
       }
-      await tracker.rollback(rollbackCount);
+      await tracker.rollback(rollbackCount, options || {});
     } catch (error) {
       console.error(chalk.red(`Error: ${error instanceof Error ? error.message : error}`));
       process.exit(1);
