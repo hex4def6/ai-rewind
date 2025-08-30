@@ -14,7 +14,7 @@ package-lock.json
 .git-ai-tracking/
 
 # Test directories
-test-ai-tracker/
+test-ai-rewind/
 /tmp/
 
 # IDE

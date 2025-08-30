@@ -38,7 +38,7 @@ export class AITracker {
       
       // Provide better error messages for common issues
       if (execaError.stderr?.includes('not a git repository')) {
-        throw new Error('AI tracking repository not initialized. Run "ai-tracker init" first.');
+        throw new Error('AI tracking repository not initialized. Run "ai-rewind init" first.');
       }
       if (execaError.stderr?.includes('Permission denied')) {
         throw new Error('Permission denied. Check file permissions in your project directory.');
@@ -103,10 +103,10 @@ export class AITracker {
       spinner.succeed(chalk.green('✓ AI tracking repository initialized successfully!'));
       
       console.log('\n' + chalk.cyan('Available commands:'));
-      console.log('  ai-tracker commit [message]  - Save current changes');
-      console.log('  ai-tracker rollback [count]  - Revert last AI change(s)');
-      console.log('  ai-tracker log [count]       - View change history');
-      console.log('  ai-tracker status            - Check current status');
+      console.log('  ai-rewind commit [message]  - Save current changes');
+      console.log('  ai-rewind rollback [count]  - Revert last AI change(s)');
+      console.log('  ai-rewind log [count]       - View change history');
+      console.log('  ai-rewind status            - Check current status');
     } catch (error) {
       spinner.fail('Failed to initialize tracking repository');
       throw error;
@@ -137,7 +137,7 @@ export class AITracker {
     try {
       if (!(await this.isInitialized())) {
         spinner.fail('AI tracking repository not initialized!');
-        throw new Error('Please run "ai-tracker init" first');
+        throw new Error('Please run "ai-rewind init" first');
       }
 
       // Check for changes
@@ -200,7 +200,7 @@ export class AITracker {
     try {
       if (!(await this.isInitialized())) {
         spinner.fail('AI tracking repository not initialized!');
-        throw new Error('Please run "ai-tracker init" first');
+        throw new Error('Please run "ai-rewind init" first');
       }
 
       // Check commit count
@@ -289,7 +289,7 @@ export class AITracker {
       await this.execGit(['reset', '--hard', `HEAD~${count}`]);
 
       spinner.succeed(chalk.green(`✓ Successfully rolled back ${count} commit(s)!`));
-      console.log(chalk.gray(`To restore: ai-tracker forward ${backupTag}`));
+      console.log(chalk.gray(`To restore: ai-rewind forward ${backupTag}`));
       
       // Show new state
       console.log('\n' + chalk.cyan('Current state:'));
@@ -308,7 +308,7 @@ export class AITracker {
     try {
       if (!(await this.isInitialized())) {
         console.log(chalk.red('Error: AI tracking repository not initialized!'));
-        console.log('Please run "ai-tracker init" first');
+        console.log('Please run "ai-rewind init" first');
         return;
       }
 
@@ -342,7 +342,7 @@ export class AITracker {
     try {
       if (!(await this.isInitialized())) {
         console.log(chalk.red('Error: AI tracking repository not initialized!'));
-        console.log('Please run "ai-tracker init" first');
+        console.log('Please run "ai-rewind init" first');
         return;
       }
 
@@ -366,7 +366,7 @@ export class AITracker {
     try {
       if (!(await this.isInitialized())) {
         spinner.fail('AI tracking repository not initialized!');
-        throw new Error('Please run "ai-tracker init" first');
+        throw new Error('Please run "ai-rewind init" first');
       }
 
       // Check if tag or commit exists
@@ -432,7 +432,7 @@ export class AITracker {
       }
     }
 
-    console.log('\n' + chalk.gray('To restore: ai-tracker forward <backup-tag>'));
+    console.log('\n' + chalk.gray('To restore: ai-rewind forward <backup-tag>'));
   }
 
   async diff(commitHash?: string): Promise<void> {
@@ -525,7 +525,7 @@ export class AITracker {
       
       // Show config info
       console.log('\n' + chalk.yellow('Configuration:'));
-      console.log(`  Config File: ${existsSync(join(this.config.workTree, '.ai-tracker.json')) ? chalk.green('Present') : chalk.gray('Not found')}`);
+      console.log(`  Config File: ${existsSync(join(this.config.workTree, '.ai-rewind.json')) ? chalk.green('Present') : chalk.gray('Not found')}`);
       console.log(`  Auto-commit Threshold: ${chalk.green(this.configManager.autoCommitThreshold + ' files')}`);
       console.log(`  Max Commits: ${chalk.green(this.configManager.maxCommits)}`);
       

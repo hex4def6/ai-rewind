@@ -41,20 +41,20 @@ const program = new Command();
 const tracker = new AITracker();
 
 program
-  .name('ai-tracker')
-  .description('Cross-platform AI change tracking system using shadow git repository')
+  .name('ai-rewind')
+  .description('AI change tracking and rollback system using shadow git repository')
   .version(version, '-v, --version', 'Display version number')
   .helpOption('-h, --help', 'Display help for command')
   .addHelpText('after', `
 Examples:
-  $ ai-tracker init                    Initialize tracking in current directory
-  $ ai-tracker commit "Fixed bug"      Commit changes with message
-  $ ai-tracker rollback                Rollback last change
-  $ ai-tracker rollback 3 --dry-run    Preview rollback of 3 commits
-  $ ai-tracker status                  Show current status
-  $ ai-tracker config --create          Create configuration file
+  $ ai-rewind init                    Initialize tracking in current directory
+  $ ai-rewind commit "Fixed bug"      Commit changes with message
+  $ ai-rewind rollback                Rollback last change
+  $ ai-rewind rollback 3 --dry-run    Preview rollback of 3 commits
+  $ ai-rewind status                  Show current status
+  $ ai-rewind config --create          Create configuration file
 
-For more information, visit: https://github.com/hex4def6/ai-tracker`);
+For more information, visit: https://github.com/hex4def6/ai-rewind`);
 
 program
   .command('init')
@@ -183,7 +183,7 @@ program
 
 program
   .command('config')
-  .description('Show or create configuration file (.ai-tracker.json)')
+  .description('Show or create configuration file (.ai-rewind.json)')
   .option('-c, --create', 'Create default configuration file')
   .option('-s, --show', 'Show current configuration')
   .action(async (options?: { create?: boolean; show?: boolean }) => {
@@ -193,15 +193,15 @@ program
       
       if (options?.create) {
         config.createDefault();
-        console.log(chalk.green('✓ Configuration file created: .ai-tracker.json'));
+        console.log(chalk.green('✓ Configuration file created: .ai-rewind.json'));
         return;
       }
       
       // Show current config (default behavior)
-      console.log(chalk.cyan.bold('AI Tracker Configuration'));
+      console.log(chalk.cyan.bold('AI Rewind Configuration'));
       console.log('=' .repeat(40));
       
-      const configPath = join(process.cwd(), '.ai-tracker.json');
+      const configPath = join(process.cwd(), '.ai-rewind.json');
       if (existsSync(configPath)) {
         console.log(chalk.yellow('Config file:'), configPath);
         console.log('\n' + chalk.cyan('Current settings:'));
@@ -209,7 +209,7 @@ program
       } else {
         console.log(chalk.yellow('No config file found. Using defaults:'));
         console.log(JSON.stringify(config.getAll(), null, 2));
-        console.log('\n' + chalk.gray('Run "ai-tracker config --create" to create config file'));
+        console.log('\n' + chalk.gray('Run "ai-rewind config --create" to create config file'));
       }
     } catch (error) {
       console.error(chalk.red(`Error: ${error instanceof Error ? error.message : error}`));

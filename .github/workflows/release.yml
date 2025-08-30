@@ -37,17 +37,17 @@ jobs:
     - name: Create standalone binaries
       run: |
         # Create standalone executables for different platforms
-        bun build src/cli.ts --compile --target bun-linux-x64 --outfile ai-tracker-linux
-        bun build src/cli.ts --compile --target bun-windows-x64 --outfile ai-tracker-windows.exe
-        bun build src/cli.ts --compile --target bun-darwin-x64 --outfile ai-tracker-macos
+        bun build src/cli.ts --compile --target bun-linux-x64 --outfile ai-rewind-linux
+        bun build src/cli.ts --compile --target bun-windows-x64 --outfile ai-rewind-windows.exe
+        bun build src/cli.ts --compile --target bun-darwin-x64 --outfile ai-rewind-macos
     
     - name: Create Release
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          ai-tracker-linux
-          ai-tracker-windows.exe
-          ai-tracker-macos
+          ai-rewind-linux
+          ai-rewind-windows.exe
+          ai-rewind-macos
         generate_release_notes: true
         draft: false
         prerelease: false

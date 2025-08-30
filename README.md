@@ -1,6 +1,6 @@
-# AI Tracker
+# AI Rewind
 
-A shadow git repository system to track AI-made changes separately from your main project git, allowing safe rollback of AI changes without affecting your version control.
+AI change tracking and rollback system using shadow git repository. Safely undo AI-made changes without affecting your main project's version control.
 
 ## Features
 
@@ -9,13 +9,14 @@ A shadow git repository system to track AI-made changes separately from your mai
 - 📊 **Statistics** - Track commits, files changed, and lines modified
 - 🖥️ **Cross-Platform** - Works on Windows, macOS, and Linux
 - 🚀 **Built with Bun** - Fast, modern JavaScript runtime
+- 🔄 **Time Travel** - Rewind your code to any previous state
 
 ## Installation
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/hex4def6/ai-tracker.git
-cd ai-tracker
+git clone https://github.com/hex4def6/ai-rewind.git
+cd ai-rewind
 ```
 
 ### 2. Install dependencies and build
@@ -27,7 +28,7 @@ bun run build
 ### 3. (Optional) Create a global alias
 Add to your `~/.bashrc`, `~/.zshrc`, or shell profile:
 ```bash
-alias ai-tracker="node $(pwd)/dist/cli.js"
+alias ai-rewind="node $(pwd)/dist/cli.js"
 ```
 
 ## Usage
@@ -35,38 +36,38 @@ alias ai-tracker="node $(pwd)/dist/cli.js"
 ### Initialize tracking in your project
 ```bash
 cd /path/to/your/project
-node /path/to/ai-tracker/dist/cli.js init
+node /path/to/ai-rewind/dist/cli.js init
 ```
 
 ### Basic Commands
 
 ```bash
 # Save a checkpoint
-node /path/to/ai-tracker/dist/cli.js commit "Added new feature"
+node /path/to/ai-rewind/dist/cli.js commit "Added new feature"
 
 # Rollback if something breaks
-node /path/to/ai-tracker/dist/cli.js rollback
+node /path/to/ai-rewind/dist/cli.js rollback
 
 # Rollback multiple commits
-node /path/to/ai-tracker/dist/cli.js rollback 3
+node /path/to/ai-rewind/dist/cli.js rollback 3
 
 # Check status
-node /path/to/ai-tracker/dist/cli.js status
+node /path/to/ai-rewind/dist/cli.js status
 
 # View history
-node /path/to/ai-tracker/dist/cli.js log
+node /path/to/ai-rewind/dist/cli.js log
 
 # View specific number of commits
-node /path/to/ai-tracker/dist/cli.js log 5
+node /path/to/ai-rewind/dist/cli.js log 5
 
 # View changes
-node /path/to/ai-tracker/dist/cli.js diff
+node /path/to/ai-rewind/dist/cli.js diff
 
 # View statistics
-node /path/to/ai-tracker/dist/cli.js stats
+node /path/to/ai-rewind/dist/cli.js stats
 
 # Show configuration
-node /path/to/ai-tracker/dist/cli.js config
+node /path/to/ai-rewind/dist/cli.js config
 ```
 
 ## Example Workflow
@@ -74,24 +75,24 @@ node /path/to/ai-tracker/dist/cli.js config
 ```bash
 # Clone and setup (once)
 cd ~
-git clone https://github.com/hex4def6/ai-tracker.git
-cd ai-tracker
+git clone https://github.com/hex4def6/ai-rewind.git
+cd ai-rewind
 bun install
 bun run build
 
 # Use in your project
 cd ~/my-project
-node ~/ai-tracker/dist/cli.js init
+node ~/ai-rewind/dist/cli.js init
 
 # ... make changes with AI/Claude ...
-node ~/ai-tracker/dist/cli.js commit "AI implemented authentication"
+node ~/ai-rewind/dist/cli.js commit "AI implemented authentication"
 
 # ... if something breaks ...
-node ~/ai-tracker/dist/cli.js rollback
+node ~/ai-rewind/dist/cli.js rollback
 
 # Check what changed
-node ~/ai-tracker/dist/cli.js status
-node ~/ai-tracker/dist/cli.js log
+node ~/ai-rewind/dist/cli.js status
+node ~/ai-rewind/dist/cli.js log
 ```
 
 ## For Claude Code Users
@@ -99,138 +100,133 @@ node ~/ai-tracker/dist/cli.js log
 Add these instructions to your Claude Code settings or CLAUDE.md file:
 
 ```markdown
-## AI Change Tracking
-When working on code changes:
-1. Initialize tracking: `node ~/ai-tracker/dist/cli.js init`
-2. Commit after significant changes: `node ~/ai-tracker/dist/cli.js commit "Description"`
-3. Rollback if errors occur: `node ~/ai-tracker/dist/cli.js rollback`
+## AI Rewind Integration
 
-Auto-commit when:
-- 5+ files changed
-- 100+ lines modified
-- Before risky operations
-- After completing features
-- After fixing bugs
-```
+When working on projects with AI Rewind available (look for `ai-rewind` directory), use these commands:
+
+### Quick Commands
+# Check if rewind is available
+test -d ~/ai-rewind && echo "AI Rewind available"
+
+# Initialize if needed (once per project)
+node ~/ai-rewind/dist/cli.js init
+
+# Create checkpoints
+node ~/ai-rewind/dist/cli.js commit "[TYPE]: Description"
 
 ### Automatic Commit Triggers
 - **5+ files modified** → Commit with "WIP: Multiple files updated"
 - **100+ lines changed** → Commit with "FEATURE: Significant changes"
-- **30+ minutes elapsed** → Commit with "CHECKPOINT: Time-based save"
-- **Before major refactoring** → Commit with "ROLLBACK_POINT: Before major changes"
+- **Risky operation** → Commit with "SAFETY: Before [operation]"
+- **User says "checkpoint"** → Commit with "CHECKPOINT: User-requested"
+- **Todo completed** → Commit with "FEATURE: [todo description]"
 
-### Commit Message Types
-- `CHECKPOINT:` - Regular save point
-- `FEATURE:` - New functionality added
-- `FIX:` - Bug fix or error correction
-- `SAFETY:` - Pre-risky operation backup
-- `ROLLBACK_POINT:` - Before major changes
-- `WIP:` - Work in progress
+### When to Rollback
+- User says "undo that" or "rewind"
+- Tests fail after changes
+- Build breaks
+- Accidental deletion
+```
 
-## Configuration
+## Advanced Usage
 
-Create `.ai-tracker.json` in your project root to customize settings:
+### Rollback with Preview
+```bash
+# See what would be rolled back without making changes
+node ~/ai-rewind/dist/cli.js rollback 3 --dry-run
+
+# Force rollback even with uncommitted changes
+node ~/ai-rewind/dist/cli.js rollback --force
+
+# Skip confirmation prompt
+node ~/ai-rewind/dist/cli.js rollback --yes
+```
+
+### Backup and Restore
+```bash
+# List available backups
+node ~/ai-rewind/dist/cli.js backups
+
+# Restore from a backup tag
+node ~/ai-rewind/dist/cli.js forward backup-2024-01-15T10-30-00
+```
+
+### Configuration
+
+Create a `.ai-rewind.json` file in your project root:
 
 ```json
 {
-  "excludePatterns": ["node_modules/**", "*.log", ".git/**"],
+  "excludePatterns": [
+    "node_modules/**",
+    ".git/**",
+    "**/*.log",
+    "**/dist/**",
+    "**/build/**"
+  ],
   "autoCommitThreshold": 5,
-  "commitMessageFormat": "AI: {message}",
+  "commitMessageFormat": "AI change at {timestamp}",
   "maxCommits": 100,
-  "verboseOutput": true,
-  "defaultBranch": "main"
+  "verboseOutput": false
 }
 ```
 
-## Windows Specific Commands
-
+Or use the config command:
 ```bash
-# If using Windows paths
-cd C:\Users\YourName\projects\my-project
-node C:\Users\YourName\ai-tracker\dist\cli.js init
-node C:\Users\YourName\ai-tracker\dist\cli.js commit "Changes made"
-node C:\Users\YourName\ai-tracker\dist\cli.js rollback
-```
+# Create default config file
+node ~/ai-rewind/dist/cli.js config --create
 
-## Requirements
-
-- [Bun](https://bun.sh) runtime (v1.0+)
-- Git
-- Node.js (v18+ for running the CLI)
-
-## How It Works
-
-1. **Initialization**: Creates a `.git-ai-tracking` directory in your project with a separate git repository
-2. **Tracking**: All file changes are tracked in this shadow repository
-3. **Commits**: Changes are committed to the shadow repo, not your main git
-4. **Rollback**: Uses `git reset --hard` in the shadow repo to restore previous state
-5. **Isolation**: The `.git-ai-tracking` directory is automatically added to `.gitignore`
-
-## Project Structure
-
-```
-ai-tracker/
-├── src/
-│   ├── AITracker.ts      # Core tracking functionality
-│   ├── Config.ts          # Configuration management
-│   ├── cli.ts            # CLI entry point
-│   └── index.ts          # Main export file
-├── dist/                 # Compiled JavaScript
-├── package.json
-├── tsconfig.json
-└── biome.json           # Biome linter configuration
+# Show current config
+node ~/ai-rewind/dist/cli.js config
 ```
 
 ## Development
 
 ```bash
-# Install dependencies
-bun install
-
-# Build
-bun run build
-
 # Run tests
 bun test
 
-# Lint
+# Watch mode
+bun run dev
+
+# Lint code
 bun run lint
 
-# Format
+# Format code
 bun run format
 ```
 
-## Testing
+## Requirements
 
-The project includes comprehensive tests for all functionality:
+- Git (must be installed and available in PATH)
+- Node.js 16+ or Bun 1.0+
+- Works on Windows, macOS, and Linux
 
-```bash
-bun test
-```
+## How It Works
 
-All 14 tests should pass, covering:
-- Initialization
-- Commits (with and without messages)
-- Rollback operations
-- Status reporting
-- Change history
-- Statistics tracking
+AI Rewind creates a shadow Git repository (`.git-ai-tracking`) in your project directory that tracks all changes independently from your main Git repository. This allows you to:
 
-## Notes
+1. **Track AI changes separately** - Your main git history stays clean
+2. **Rollback safely** - Undo AI changes without affecting your commits
+3. **Time travel** - Jump to any previous state of your code
+4. **No conflicts** - Works alongside your existing git workflow
 
-- The shadow repository is completely independent from your main git repository
-- Line endings are handled automatically (CRLF on Windows, LF on Unix)
-- All changes are tracked locally - nothing is pushed to remote repositories
-- The `.git-ai-tracking` directory should not be committed to your main repository
+## Safety Features
+
+- **Automatic backups** before rollback operations
+- **Dry-run mode** to preview changes
+- **Confirmation prompts** for destructive operations
+- **Force flags** for advanced users
+- **Excludes sensitive files** automatically (.env, secrets, etc.)
 
 ## License
 
-MIT
-
-## Author
-
-hex4def6
+MIT - See [LICENSE](LICENSE) file for details
 
 ## Contributing
 
-Contributions welcome! Please feel free to submit issues and pull requests.
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## Support
+
+For issues, questions, or suggestions, please open an issue on [GitHub](https://github.com/hex4def6/ai-rewind/issues).

@@ -33,7 +33,7 @@ export class Config {
   };
 
   constructor(workTree: string) {
-    this.configPath = join(workTree, '.ai-tracker.json');
+    this.configPath = join(workTree, '.ai-rewind.json');
     this.config = this.load();
   }
 
@@ -44,7 +44,7 @@ export class Config {
         const userConfig = JSON.parse(content);
         return { ...this.defaults, ...userConfig };
       } catch (error) {
-        console.warn('Warning: Invalid .ai-tracker.json, using defaults');
+        console.warn('Warning: Invalid .ai-rewind.json, using defaults');
         return this.defaults;
       }
     }
@@ -60,7 +60,7 @@ export class Config {
     if (!existsSync(this.configPath)) {
       const content = JSON.stringify(this.defaults, null, 2);
       writeFileSync(this.configPath, content);
-      console.log('Created .ai-tracker.json with default configuration');
+      console.log('Created .ai-rewind.json with default configuration');
     }
   }
 

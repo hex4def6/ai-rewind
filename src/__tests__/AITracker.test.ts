@@ -11,7 +11,7 @@ describe('AITracker', () => {
 
   beforeEach(() => {
     // Create a temporary test directory
-    testDir = join(tmpdir(), `ai-tracker-test-${Date.now()}`);
+    testDir = join(tmpdir(), `ai-rewind-test-${Date.now()}`);
     mkdirSync(testDir, { recursive: true });
     tracker = new AITracker(testDir);
   });
@@ -281,13 +281,13 @@ describe('AITracker', () => {
       expect(result).not.toContain('node_modules');
     });
 
-    test('should load custom config from .ai-tracker.json', async () => {
+    test('should load custom config from .ai-rewind.json', async () => {
       // Create custom config
       const customConfig = {
         excludePatterns: ['*.tmp', 'temp/**'],
         commitMessageFormat: 'Custom: {timestamp}'
       };
-      writeFileSync(join(testDir, '.ai-tracker.json'), JSON.stringify(customConfig, null, 2));
+      writeFileSync(join(testDir, '.ai-rewind.json'), JSON.stringify(customConfig, null, 2));
       
       // Re-create tracker to load config
       tracker = new AITracker(testDir);
@@ -309,7 +309,7 @@ describe('AITracker', () => {
   describe('error handling', () => {
     test('should provide helpful error messages', async () => {
       // Try to commit without initialization
-      await expect(tracker.commit('test')).rejects.toThrow('ai-tracker init');
+      await expect(tracker.commit('test')).rejects.toThrow('ai-rewind init');
       
       // Try invalid rollback with no history
       await tracker.initialize();
