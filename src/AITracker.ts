@@ -102,7 +102,7 @@ export class AITracker {
       const mainGitDir = join(this.config.workTree, '.git');
       if (existsSync(mainGitDir)) {
         spinner.info(chalk.yellow('Detected existing Git repository'));
-        console.log(chalk.cyan('AI Tracker will operate independently from your main Git repository'));
+        console.log(chalk.cyan('AI Rewind will operate independently from your main Git repository'));
         console.log(chalk.gray('The .git-ai-tracking directory will be added to .gitignore'));
       }
 
@@ -396,7 +396,7 @@ export class AITracker {
   }
 
   async status(): Promise<void> {
-    console.log(chalk.cyan.bold('AI Change Tracker - Status'));
+    console.log(chalk.cyan.bold('AI Rewind - Status'));
     console.log('=' .repeat(40));
 
     try {
@@ -430,7 +430,7 @@ export class AITracker {
   }
 
   async log(count: number = 20): Promise<void> {
-    console.log(chalk.cyan.bold('AI Change Tracker - Change Log'));
+    console.log(chalk.cyan.bold('AI Rewind - Change Log'));
     console.log('=' .repeat(40));
 
     try {
@@ -502,7 +502,7 @@ export class AITracker {
       return;
     }
 
-    console.log(chalk.cyan.bold('AI Tracker - Available Backups'));
+    console.log(chalk.cyan.bold('AI Rewind - Available Backups'));
     console.log('=' .repeat(40));
 
     const tags = await this.execGit(['tag', '-l', 'backup-*', '--sort=-creatordate']);
@@ -595,7 +595,7 @@ export class AITracker {
       spinner.succeed('Statistics calculated');
 
       // Display statistics
-      console.log('\n' + chalk.cyan.bold('📊 AI Tracker Statistics'));
+      console.log('\n' + chalk.cyan.bold('📊 AI Rewind Statistics'));
       console.log('=' .repeat(40));
       
       console.log('\n' + chalk.yellow('Repository Info:'));

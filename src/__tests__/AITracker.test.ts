@@ -255,7 +255,7 @@ describe('AITracker', () => {
       
       await tracker.stats();
       
-      expect(logOutput).toContain('AI Tracker Statistics');
+      expect(logOutput).toContain('AI Rewind Statistics');
       expect(logOutput).toContain('Total Commits');
       expect(logOutput).toContain('Files Tracked');
       

@@ -25,7 +25,7 @@ function build() {
     fs.mkdirSync(distDir, { recursive: true });
   }
 
-  console.log('Building AI Tracker...');
+  console.log('Building AI Rewind...');
 
   try {
     if (hasCommand('bun')) {
