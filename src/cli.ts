@@ -117,6 +117,19 @@ program
   });
 
 program
+  .command('rollback-file <file>')
+  .description('Rollback specific file(s) to previous state')
+  .option('-c, --commit <hash>', 'Restore file from specific commit')
+  .action(async (file: string, options?: { commit?: string }) => {
+    try {
+      await tracker.rollbackFile(file, options?.commit);
+    } catch (error) {
+      console.error(chalk.red(`Error: ${error instanceof Error ? error.message : error}`));
+      process.exit(1);
+    }
+  });
+
+program
   .command('backups')
   .description('List available backup points')
   .action(async () => {

@@ -152,7 +152,17 @@ export class AITracker {
         return;
       }
 
-      spinner.text = 'Staging all changes...';
+      spinner.text = 'Analyzing changes...';
+      
+      // Count files to be staged for progress indicator
+      const statusOutput = await this.execGit(['status', '--porcelain']);
+      const changedFiles = statusOutput.split('\n').filter(line => line.trim()).length;
+      
+      if (changedFiles > 50) {
+        spinner.text = `Staging ${changedFiles} files (this may take a moment)...`;
+      } else {
+        spinner.text = 'Staging all changes...';
+      }
       
       // Get exclude patterns from config and create .gitignore entries
       const excludePatterns = this.configManager.excludePatterns;
@@ -171,6 +181,10 @@ export class AITracker {
       }
       
       await this.execGit(['add', '-A']);
+      
+      if (changedFiles > 50) {
+        spinner.text = `Committing ${changedFiles} files...`;
+      }
 
       // Generate commit message if not provided
       if (!message) {
@@ -233,7 +247,7 @@ export class AITracker {
       console.log('\n' + chalk.cyan('Current history:'));
       console.log(currentLog);
 
-      // Check for uncommitted changes
+      // Check for uncommitted changes in shadow repo
       const status = await this.execGit(['status', '--porcelain']);
       if (status.trim() && !options.force) {
         spinner.warn(chalk.yellow('Warning: You have uncommitted changes that will be lost!'));
@@ -241,6 +255,32 @@ export class AITracker {
         console.log('Please commit or stash your changes before rolling back.');
         console.log('Or use --force to rollback anyway (changes will be lost).');
         return;
+      }
+
+      // Check for main git repo conflicts
+      const mainGitPath = join(this.config.workTree, '.git');
+      if (existsSync(mainGitPath)) {
+        try {
+          const { stdout: mainStatus } = await execa('git', ['status', '--porcelain'], { cwd: this.config.workTree });
+          if (mainStatus.trim()) {
+            spinner.warn(chalk.yellow('Warning: Main git repository has uncommitted changes!'));
+            console.log('\n' + chalk.yellow('⚠ Warning: Your main git repository has uncommitted changes.'));
+            console.log('Rolling back AI changes may conflict with your uncommitted work.');
+            console.log('\nOptions:');
+            console.log('1. Commit your main git changes first: ' + chalk.cyan('git add . && git commit'));
+            console.log('2. Stash your changes: ' + chalk.cyan('git stash'));
+            console.log('3. Use --force to proceed anyway (risky)');
+            
+            if (!options.force) {
+              spinner.fail('Aborted due to main git conflicts');
+              return;
+            }
+            console.log(chalk.yellow('\nProceeding with --force flag...'));
+          }
+        } catch (error) {
+          // Main git command failed - repo might be in bad state but continue
+          console.log(chalk.gray('Note: Could not check main git status'));
+        }
       }
 
       if (options.dryRun) {
@@ -265,6 +305,9 @@ export class AITracker {
       try {
         await this.execGit(['tag', backupTag, 'HEAD']);
         console.log(chalk.gray(`Backup created: ${backupTag}`));
+        
+        // Auto-cleanup old backup tags (keep last 10)
+        await this.cleanupOldBackups(10);
       } catch (error) {
         console.warn(chalk.yellow('Warning: Could not create backup tag'));
       }
@@ -547,5 +590,69 @@ export class AITracker {
   async init(): Promise<void> {
     await this.initialize();
     this.configManager.createDefault();
+  }
+
+  private async cleanupOldBackups(keepCount: number = 10): Promise<void> {
+    try {
+      // Get all backup tags sorted by date (newest first)
+      const tags = await this.execGit(['tag', '-l', 'backup-*', '--sort=-creatordate']);
+      const backupTags = tags.split('\n').filter(tag => tag.trim());
+      
+      // If we have more than keepCount backups, delete the old ones
+      if (backupTags.length > keepCount) {
+        const tagsToDelete = backupTags.slice(keepCount);
+        for (const tag of tagsToDelete) {
+          if (tag.trim()) {
+            await this.execGit(['tag', '-d', tag.trim()]);
+          }
+        }
+        
+        if (tagsToDelete.length > 0) {
+          console.log(chalk.gray(`Cleaned up ${tagsToDelete.length} old backup(s)`));
+        }
+      }
+    } catch (error) {
+      // Silently fail - cleanup is not critical
+    }
+  }
+
+  async rollbackFile(filePath: string, commit?: string): Promise<void> {
+    const spinner = ora('Checking file history...').start();
+
+    try {
+      if (!(await this.isInitialized())) {
+        spinner.fail('AI tracking repository not initialized!');
+        throw new Error('Please run "ai-rewind init" first');
+      }
+
+      // Default to previous commit if not specified
+      const targetCommit = commit || 'HEAD~1';
+
+      // Check if file exists in the target commit
+      try {
+        await this.execGit(['cat-file', '-e', `${targetCommit}:${filePath}`]);
+      } catch {
+        spinner.fail(`File '${filePath}' not found in commit ${targetCommit}`);
+        return;
+      }
+
+      spinner.text = `Restoring ${filePath} from ${targetCommit}...`;
+
+      // Restore the file from the specified commit
+      await this.execGit(['checkout', targetCommit, '--', filePath]);
+
+      spinner.succeed(chalk.green(`✓ Successfully restored ${filePath}`));
+      
+      console.log('\n' + chalk.cyan('File restored. Current status:'));
+      const status = await this.execGit(['status', '--porcelain', filePath]);
+      console.log(status || 'File is unchanged from repository');
+      
+      console.log('\n' + chalk.yellow('Note: Changes are not committed yet.'));
+      console.log('To save: ' + chalk.cyan(`node ~/ai-rewind/dist/cli.js commit "Restored ${filePath}"`));
+      console.log('To undo: ' + chalk.cyan(`node ~/ai-rewind/dist/cli.js checkout HEAD -- ${filePath}`));
+    } catch (error) {
+      spinner.fail('Failed to rollback file');
+      throw error;
+    }
   }
 }
