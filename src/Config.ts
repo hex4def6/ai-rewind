@@ -41,8 +41,46 @@ export class Config {
     if (existsSync(this.configPath)) {
       try {
         const content = readFileSync(this.configPath, 'utf-8');
+        
+        // Check file size to prevent DoS
+        if (content.length > 100000) { // 100KB max
+          console.warn('Warning: Config file too large, using defaults');
+          return this.defaults;
+        }
+        
         const userConfig = JSON.parse(content);
-        return { ...this.defaults, ...userConfig };
+        
+        // Validate config schema to prevent prototype pollution
+        const validatedConfig: TrackerConfigOptions = {};
+        
+        // Only copy allowed properties
+        if (Array.isArray(userConfig.excludePatterns)) {
+          validatedConfig.excludePatterns = userConfig.excludePatterns
+            .filter((p: any) => typeof p === 'string' && p.length < 1000)
+            .slice(0, 100); // Max 100 patterns
+        }
+        
+        if (typeof userConfig.autoCommitThreshold === 'number') {
+          validatedConfig.autoCommitThreshold = Math.min(Math.max(1, userConfig.autoCommitThreshold), 1000);
+        }
+        
+        if (typeof userConfig.commitMessageFormat === 'string' && userConfig.commitMessageFormat.length < 500) {
+          validatedConfig.commitMessageFormat = userConfig.commitMessageFormat;
+        }
+        
+        if (typeof userConfig.maxCommits === 'number') {
+          validatedConfig.maxCommits = Math.min(Math.max(10, userConfig.maxCommits), 10000);
+        }
+        
+        if (typeof userConfig.verboseOutput === 'boolean') {
+          validatedConfig.verboseOutput = userConfig.verboseOutput;
+        }
+        
+        if (typeof userConfig.defaultBranch === 'string' && userConfig.defaultBranch.length < 100) {
+          validatedConfig.defaultBranch = userConfig.defaultBranch;
+        }
+        
+        return { ...this.defaults, ...validatedConfig };
       } catch (error) {
         console.warn('Warning: Invalid .ai-rewind.json, using defaults');
         return this.defaults;

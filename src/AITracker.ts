@@ -16,21 +16,51 @@ export class AITracker {
   private configManager: Config;
 
   constructor(workTree: string = process.cwd()) {
+    // Validate and sanitize workTree path
+    const resolvedPath = resolve(workTree);
+    
+    // Prevent path traversal attacks
+    if (resolvedPath.includes('..') || !existsSync(resolvedPath)) {
+      throw new Error('Invalid working directory specified');
+    }
+    
+    // Ensure we're not in a system directory
+    const systemDirs = ['/etc', '/usr', '/bin', '/sbin', '/boot', 'C:\\Windows', 'C:\\Program Files'];
+    if (systemDirs.some(dir => resolvedPath.startsWith(dir))) {
+      throw new Error('Cannot initialize tracking in system directory');
+    }
+    
     this.config = {
-      gitDir: join(workTree, '.git-ai-tracking'),
-      workTree: resolve(workTree),
-      ignoreFile: join(workTree, '.gitignore')
+      gitDir: join(resolvedPath, '.git-ai-tracking'),
+      workTree: resolvedPath,
+      ignoreFile: join(resolvedPath, '.gitignore')
     };
     this.configManager = new Config(this.config.workTree);
   }
 
   private async execGit(args: string[]): Promise<string> {
+    // Validate git arguments to prevent injection
+    const dangerousPatterns = [';', '&&', '||', '|', '>', '<', '`', '$', '\n', '\r'];
+    for (const arg of args) {
+      if (typeof arg !== 'string') {
+        throw new Error('Invalid git argument type');
+      }
+      if (dangerousPatterns.some(pattern => arg.includes(pattern))) {
+        throw new Error('Invalid characters in git arguments');
+      }
+    }
+    
     try {
       const { stdout } = await execa('git', [
         `--git-dir=${this.config.gitDir}`,
         `--work-tree=${this.config.workTree}`,
         ...args
-      ]);
+      ], {
+        // Additional security: don't allow shell interpretation
+        shell: false,
+        // Limit stdout size to prevent memory exhaustion
+        maxBuffer: 10 * 1024 * 1024 // 10MB
+      });
       return stdout;
     } catch (error) {
       const execaError = error as ExecaError;
@@ -135,6 +165,18 @@ export class AITracker {
   }
 
   async commit(message?: string): Promise<void> {
+    // Validate commit message
+    if (message) {
+      if (typeof message !== 'string') {
+        throw new Error('Commit message must be a string');
+      }
+      if (message.length > 1000) {
+        throw new Error('Commit message too long (max 1000 characters)');
+      }
+      // Remove any control characters
+      message = message.replace(/[\x00-\x1F\x7F]/g, '');
+    }
+    
     const spinner = ora('Checking for changes...').start();
 
     try {
@@ -617,6 +659,24 @@ export class AITracker {
   }
 
   async rollbackFile(filePath: string, commit?: string): Promise<void> {
+    // Validate file path
+    if (!filePath || typeof filePath !== 'string') {
+      throw new Error('Invalid file path');
+    }
+    
+    // Prevent path traversal
+    const normalizedPath = filePath.replace(/\\/g, '/');
+    if (normalizedPath.includes('../') || normalizedPath.startsWith('/')) {
+      throw new Error('Invalid file path: must be relative to working directory');
+    }
+    
+    // Validate commit hash if provided
+    if (commit) {
+      if (!/^[a-zA-Z0-9~^]+$/.test(commit)) {
+        throw new Error('Invalid commit reference');
+      }
+    }
+    
     const spinner = ora('Checking file history...').start();
 
     try {
