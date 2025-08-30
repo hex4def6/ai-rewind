@@ -144,6 +144,42 @@ describe('AITracker', () => {
       expect(existsSync(join(testDir, 'file2.txt'))).toBe(false);
       expect(existsSync(join(testDir, 'file1.txt'))).toBe(true);
     });
+
+    test('should support dry-run mode', async () => {
+      writeFileSync(join(testDir, 'file3.txt'), 'content 3');
+      await tracker.commit('Commit 3');
+      
+      const originalLog = console.log;
+      let logOutput = '';
+      console.log = (msg: any) => {
+        logOutput += String(msg);
+      };
+      
+      await tracker.rollback(1, { dryRun: true });
+      
+      // Files should still exist (dry run doesn't change anything)
+      expect(existsSync(join(testDir, 'file3.txt'))).toBe(true);
+      expect(logOutput).toContain('Would rollback');
+      
+      console.log = originalLog;
+    });
+
+    test('should support force flag with uncommitted changes', async () => {
+      // Create uncommitted change
+      writeFileSync(join(testDir, 'uncommitted.txt'), 'not committed');
+      
+      // Should work with force flag
+      await tracker.rollback(1, { force: true });
+      
+      expect(existsSync(join(testDir, 'file2.txt'))).toBe(false);
+      expect(existsSync(join(testDir, 'file1.txt'))).toBe(true);
+    });
+
+    test('should validate rollback count', async () => {
+      await expect(tracker.rollback(0)).rejects.toThrow('positive integer');
+      await expect(tracker.rollback(-1)).rejects.toThrow('positive integer');
+      await expect(tracker.rollback(1.5)).rejects.toThrow('positive integer');
+    });
   });
 
   describe('status', () => {
@@ -222,6 +258,71 @@ describe('AITracker', () => {
       expect(logOutput).toContain('AI Tracker Statistics');
       expect(logOutput).toContain('Total Commits');
       expect(logOutput).toContain('Files Tracked');
+      
+      console.log = originalLog;
+    });
+  });
+
+  describe('config and exclude patterns', () => {
+    test('should respect exclude patterns from config', async () => {
+      await tracker.initialize();
+      
+      // Create files that should be excluded
+      mkdirSync(join(testDir, 'node_modules'), { recursive: true });
+      writeFileSync(join(testDir, 'node_modules', 'test.js'), 'should be excluded');
+      writeFileSync(join(testDir, 'included.txt'), 'should be included');
+      
+      await tracker.commit('Test excludes');
+      
+      // Check that node_modules is not tracked
+      const result = await $`git --git-dir=${join(testDir, '.git-ai-tracking')} --work-tree=${testDir} ls-files`.text();
+      
+      expect(result).toContain('included.txt');
+      expect(result).not.toContain('node_modules');
+    });
+
+    test('should load custom config from .ai-tracker.json', async () => {
+      // Create custom config
+      const customConfig = {
+        excludePatterns: ['*.tmp', 'temp/**'],
+        commitMessageFormat: 'Custom: {timestamp}'
+      };
+      writeFileSync(join(testDir, '.ai-tracker.json'), JSON.stringify(customConfig, null, 2));
+      
+      // Re-create tracker to load config
+      tracker = new AITracker(testDir);
+      await tracker.initialize();
+      
+      writeFileSync(join(testDir, 'test.txt'), 'content');
+      writeFileSync(join(testDir, 'test.tmp'), 'temp file');
+      
+      await tracker.commit();
+      
+      // Check that .tmp file is excluded
+      const result = await $`git --git-dir=${join(testDir, '.git-ai-tracking')} --work-tree=${testDir} ls-files`.text();
+      
+      expect(result).toContain('test.txt');
+      expect(result).not.toContain('test.tmp');
+    });
+  });
+
+  describe('error handling', () => {
+    test('should provide helpful error messages', async () => {
+      // Try to commit without initialization
+      await expect(tracker.commit('test')).rejects.toThrow('ai-tracker init');
+      
+      // Try invalid rollback with no history
+      await tracker.initialize();
+      
+      // This should not throw but exit gracefully (only initial commit exists)
+      const originalLog = console.log;
+      let logOutput = '';
+      console.log = (msg: any) => {
+        logOutput += String(msg);
+      };
+      
+      await tracker.rollback(1);
+      expect(logOutput).toContain('Cannot rollback');
       
       console.log = originalLog;
     });

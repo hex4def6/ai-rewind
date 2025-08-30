@@ -3,7 +3,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { AITracker } from './AITracker.js';
-import { readFileSync } from 'fs';
+import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -43,7 +43,18 @@ const tracker = new AITracker();
 program
   .name('ai-tracker')
   .description('Cross-platform AI change tracking system using shadow git repository')
-  .version(version);
+  .version(version, '-v, --version', 'Display version number')
+  .helpOption('-h, --help', 'Display help for command')
+  .addHelpText('after', `
+Examples:
+  $ ai-tracker init                    Initialize tracking in current directory
+  $ ai-tracker commit "Fixed bug"      Commit changes with message
+  $ ai-tracker rollback                Rollback last change
+  $ ai-tracker rollback 3 --dry-run    Preview rollback of 3 commits
+  $ ai-tracker status                  Show current status
+  $ ai-tracker config --create          Create configuration file
+
+For more information, visit: https://github.com/hex4def6/ai-tracker`);
 
 program
   .command('init')
@@ -143,13 +154,34 @@ program
 
 program
   .command('config')
-  .description('Create default configuration file (.ai-tracker.json)')
-  .action(async () => {
+  .description('Show or create configuration file (.ai-tracker.json)')
+  .option('-c, --create', 'Create default configuration file')
+  .option('-s, --show', 'Show current configuration')
+  .action(async (options?: { create?: boolean; show?: boolean }) => {
     try {
       const { Config } = await import('./Config.js');
       const config = new Config(process.cwd());
-      config.createDefault();
-      console.log(chalk.green('✓ Configuration file created/updated'));
+      
+      if (options?.create) {
+        config.createDefault();
+        console.log(chalk.green('✓ Configuration file created: .ai-tracker.json'));
+        return;
+      }
+      
+      // Show current config (default behavior)
+      console.log(chalk.cyan.bold('AI Tracker Configuration'));
+      console.log('=' .repeat(40));
+      
+      const configPath = join(process.cwd(), '.ai-tracker.json');
+      if (existsSync(configPath)) {
+        console.log(chalk.yellow('Config file:'), configPath);
+        console.log('\n' + chalk.cyan('Current settings:'));
+        console.log(JSON.stringify(config.getAll(), null, 2));
+      } else {
+        console.log(chalk.yellow('No config file found. Using defaults:'));
+        console.log(JSON.stringify(config.getAll(), null, 2));
+        console.log('\n' + chalk.gray('Run "ai-tracker config --create" to create config file'));
+      }
     } catch (error) {
       console.error(chalk.red(`Error: ${error instanceof Error ? error.message : error}`));
       process.exit(1);

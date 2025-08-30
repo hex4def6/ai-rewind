@@ -101,4 +101,8 @@ export class Config {
     const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19);
     return format.replace('{timestamp}', timestamp);
   }
+
+  getAll(): TrackerConfigOptions {
+    return this.config;
+  }
 }

@@ -68,6 +68,14 @@ export class AITracker {
         throw new Error('Repository already initialized. To reinitialize, first delete .git-ai-tracking directory');
       }
 
+      // Check for existing Git repository
+      const mainGitDir = join(this.config.workTree, '.git');
+      if (existsSync(mainGitDir)) {
+        spinner.info(chalk.yellow('Detected existing Git repository'));
+        console.log(chalk.cyan('AI Tracker will operate independently from your main Git repository'));
+        console.log(chalk.gray('The .git-ai-tracking directory will be added to .gitignore'));
+      }
+
       // Initialize repository
       await this.execGit(['init']);
       spinner.text = 'Configuring tracking repository...';
