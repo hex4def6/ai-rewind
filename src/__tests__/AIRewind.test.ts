@@ -1,19 +1,19 @@
 import { describe, expect, test, beforeEach, afterEach } from 'bun:test';
-import { AITracker } from '../AITracker.js';
+import { AIRewind } from '../AIRewind.js';
 import { existsSync, rmSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { $ } from 'bun';
 
-describe('AITracker', () => {
+describe('AIRewind', () => {
   let testDir: string;
-  let tracker: AITracker;
+  let tracker: AIRewind;
 
   beforeEach(() => {
     // Create a temporary test directory
     testDir = join(tmpdir(), `ai-rewind-test-${Date.now()}`);
     mkdirSync(testDir, { recursive: true });
-    tracker = new AITracker(testDir);
+    tracker = new AIRewind(testDir);
   });
 
   afterEach(() => {
@@ -290,7 +290,7 @@ describe('AITracker', () => {
       writeFileSync(join(testDir, '.ai-rewind.json'), JSON.stringify(customConfig, null, 2));
       
       // Re-create tracker to load config
-      tracker = new AITracker(testDir);
+      tracker = new AIRewind(testDir);
       await tracker.initialize();
       
       writeFileSync(join(testDir, 'test.txt'), 'content');

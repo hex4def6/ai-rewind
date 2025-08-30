@@ -2,7 +2,7 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { AITracker } from './AITracker.js';
+import { AIRewind } from './AIRewind.js';
 import { readFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -38,7 +38,7 @@ if (!checkGitAvailable()) {
 }
 
 const program = new Command();
-const tracker = new AITracker();
+const tracker = new AIRewind();
 
 program
   .name('ai-rewind')

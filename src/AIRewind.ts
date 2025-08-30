@@ -11,7 +11,7 @@ export interface TrackerConfig {
   ignoreFile: string;
 }
 
-export class AITracker {
+export class AIRewind {
   private config: TrackerConfig;
   private configManager: Config;
 
