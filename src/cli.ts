@@ -230,6 +230,19 @@ program
     }
   });
 
+program
+  .command('install')
+  .description('Install AI Rewind globally and update CLAUDE.md')
+  .option('--path <path>', 'Custom path to ai-rewind installation')
+  .action(async (options?: { path?: string }) => {
+    try {
+      await tracker.installGlobally(options?.path);
+    } catch (error) {
+      console.error(chalk.red(`Error: ${error instanceof Error ? error.message : error}`));
+      process.exit(1);
+    }
+  });
+
 // Show help if no command provided
 if (process.argv.length === 2) {
   program.help();

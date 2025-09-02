@@ -1,9 +1,13 @@
 import { execa, ExecaError } from 'execa';
 import { existsSync, writeFileSync, readFileSync, mkdirSync } from 'fs';
-import { join, resolve } from 'path';
+import { join, resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import chalk from 'chalk';
 import ora from 'ora';
 import { Config } from './Config.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 export interface TrackerConfig {
   gitDir: string;
@@ -712,6 +716,146 @@ export class AIRewind {
       console.log('To undo: ' + chalk.cyan(`node ~/ai-rewind/dist/cli.js checkout HEAD -- ${filePath}`));
     } catch (error) {
       spinner.fail('Failed to rollback file');
+      throw error;
+    }
+  }
+
+  async installGlobally(customPath?: string): Promise<void> {
+    const spinner = ora('Setting up AI Rewind globally...').start();
+    
+    try {
+      // Determine the installation path
+      const installPath = customPath || __dirname.replace(/[\\\/]dist[\\\/]?.*/, '');
+      const platform = process.platform;
+      const homeDir = process.env.HOME || process.env.USERPROFILE || '';
+      
+      if (!homeDir) {
+        throw new Error('Could not determine home directory');
+      }
+      
+      // Path to CLAUDE.md
+      const claudeMdPath = join(homeDir, '.claude', 'CLAUDE.md');
+      const claudeDir = join(homeDir, '.claude');
+      
+      // Ensure .claude directory exists
+      if (!existsSync(claudeDir)) {
+        mkdirSync(claudeDir, { recursive: true });
+        spinner.text = 'Created .claude directory...';
+      }
+      
+      // Prepare the content to add
+      const aiRewindSection = `
+## AI Rewind Integration
+
+When working on projects with AI Rewind available (look for \`ai-rewind\` directory in user's home), use these guidelines:
+
+### Quick Commands
+\`\`\`bash
+# Check if rewind is available
+test -d ~/ai-rewind && echo "AI Rewind available"
+
+# Initialize if needed (once per project)
+node ~/ai-rewind/dist/cli.js init
+
+# Create checkpoints
+node ~/ai-rewind/dist/cli.js commit "[TYPE]: Description"
+\`\`\`
+
+### Automatic Commit Triggers
+- **5+ files modified** → Commit with "WIP: Multiple files updated"
+- **100+ lines changed** → Commit with "FEATURE: Significant changes"
+- **Risky operation** → Commit with "SAFETY: Before [operation]"
+- **User says "checkpoint"** → Commit with "CHECKPOINT: User-requested"
+- **Todo completed** → Commit with "FEATURE: [todo description]"
+
+### Commit Message Types
+- \`CHECKPOINT:\` - Major milestones or user-requested saves
+- \`FEATURE:\` - New functionality completed
+- \`FIX:\` - Bug corrections
+- \`SAFETY:\` - Before risky operations
+- \`ROLLBACK_POINT:\` - Before experimental changes
+- \`WIP:\` - Work in progress (time/threshold based)
+
+### Best Practices
+1. **Commit silently** - Don't announce routine commits
+2. **Checkpoint on request** - Always honor user checkpoint requests
+3. **Safety first** - Commit before any destructive operations
+4. **Descriptive messages** - Make rollback points easy to identify
+5. **Integrate with todos** - Commit when completing TodoWrite items
+
+### When to Rollback
+- User says "undo that", "rewind", or "rollback"
+- Tests fail after changes to 3+ files
+- Build breaks and fix isn't obvious
+- Accidental deletion or wrong files modified
+
+### Example Usage Pattern
+\`\`\`bash
+# Before risky operation
+node ~/ai-rewind/dist/cli.js commit "SAFETY: Before refactoring auth system"
+
+# After completing feature
+node ~/ai-rewind/dist/cli.js commit "FEATURE: Authentication implemented"
+
+# If something goes wrong
+node ~/ai-rewind/dist/cli.js rollback 1
+
+# Check status
+node ~/ai-rewind/dist/cli.js status
+
+# View history
+node ~/ai-rewind/dist/cli.js log
+\`\`\`
+
+### Windows Users
+For Windows, the paths would be:
+\`\`\`bash
+# Check if available (Windows)
+if exist "%USERPROFILE%\\ai-rewind" echo AI Rewind available
+
+# Use in Windows
+node %USERPROFILE%\\ai-rewind\\dist\\cli.js init
+node %USERPROFILE%\\ai-rewind\\dist\\cli.js commit "CHECKPOINT: User requested"
+\`\`\`
+
+Remember: Track proactively, commit strategically, rewind confidently.
+`;
+      
+      // Check if CLAUDE.md exists
+      let content = '';
+      if (existsSync(claudeMdPath)) {
+        content = readFileSync(claudeMdPath, 'utf-8');
+        
+        // Check if AI Rewind section already exists
+        if (content.includes('## AI Rewind Integration')) {
+          spinner.succeed('AI Rewind already configured in CLAUDE.md');
+          console.log(chalk.yellow('\nNote: AI Rewind section already exists in your CLAUDE.md'));
+          return;
+        }
+        
+        // Append to existing file
+        spinner.text = 'Updating CLAUDE.md...';
+        content = content.trimEnd() + '\n\n' + aiRewindSection;
+      } else {
+        // Create new file
+        spinner.text = 'Creating CLAUDE.md...';
+        content = '# Claude AI Assistant Instructions\n' + aiRewindSection;
+      }
+      
+      // Write the file
+      writeFileSync(claudeMdPath, content, 'utf-8');
+      
+      spinner.succeed('AI Rewind globally configured!');
+      
+      console.log('\n' + chalk.green('✓ AI Rewind has been added to your global CLAUDE.md'));
+      console.log(chalk.cyan('Location:'), claudeMdPath);
+      console.log('\n' + chalk.yellow('Next steps:'));
+      console.log('1. Navigate to any project: ' + chalk.cyan('cd /path/to/project'));
+      console.log('2. Initialize AI Rewind: ' + chalk.cyan(`node ${installPath}/dist/cli.js init`));
+      console.log('\n' + chalk.gray('Claude will now automatically use AI Rewind in all your projects!'));
+      
+    } catch (error) {
+      spinner.fail('Failed to install globally');
       throw error;
     }
   }
